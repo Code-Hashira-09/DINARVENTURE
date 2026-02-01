@@ -10,6 +10,8 @@ The application provides functionalities such as user registration, login authen
 The system supports MySQL/MariaDB as the backend database and uses Maven for dependency management. Security improvements and bug fixes have been applied to enhance application reliability
 
 
+keywords
+Spring Boot, Hibernate, MVC Architecture, Java, MySQL, Maven, DAO Pattern, Service Layer, JSP, E-Commerce Application, Web Development
 
 
 
