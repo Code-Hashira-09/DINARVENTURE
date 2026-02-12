@@ -1,18 +1,70 @@
-UserName :230223131012
-Password :60297196
+How Proxy Works in Java for @Transactional
+
+Proxy Creation: When your application starts, the framework scans for classes and methods annotated with @Transactional. It dynamically creates a proxy object that wraps the original object (the "target bean") [1].
+
+Interception: When a method annotated with @Transactional is called on the proxy object, the proxy intercepts the call before it reaches the original method [1, 2].
+
+Transaction Management Logic: Within the interceptor logic, the framework performs several actions:
+Starts a transaction: It obtains a database connection and begins a new transaction [2].
+
+Calls the actual method: It then proceeds to call the actual business logic method on the target bean.
+
+Commits or rolls back:
+If the method executes successfully without throwing an unchecked exception, the proxy logic commits the transaction [2].
+If the method throws an unchecked exception (or a checked exception configured to roll back), the proxy logic rolls back the transaction [2].
+
+Returning the result: After handling the transaction outcome, the result is returned to the caller. 
+Essentially, the proxy acts as a middleman, adding the transactional behavior around your core business logic without you needing to manually manage transaction boundaries in your code [1]. 
 
 
+How to See the Proxy in Action
+You can observe the proxy behavior and its details using several methods:
 
+1. Debugging and Inspection
+Set a breakpoint in your service method and inspect the object in your IDE's debugger: 
+Check the object type: If your service is called MyService, the object instance you are interacting with is likely not MyService itself, but a proxy class (e.g., com.sun.proxy.$Proxy42 if using JDK dynamic proxies, or a CGLIB-generated class like MyService$$EnhancerBySpringCGLIB$$...).
+Inspect the stack trace: The call stack will show the proxy's interceptor methods being invoked before your actual method [1]. 
 
-Project Abstract (PMMS–GTU Format)
-This project focuses on the development of a web-based E-Commerce application using Spring Boot and Hibernate ORM. The system is designed using the MVC (Model–View–Controller) architecture, which improves code reusability, scalability, and maintainability. Hibernate is used for database interaction, enabling automatic creation of database and tables at runtime.
-The application provides functionalities such as user registration, login authentication, product management, category management, customer management, and admin dashboard. The project follows a layered architecture where DAO classes handle database operations, service classes implement business logic, and controllers manage user requests and responses using ModelAndView.
-The system supports MySQL/MariaDB as the backend database and uses Maven for dependency management. Security improvements and bug fixes have been applied to enhance application reliability
+2. Using AspectJ Proxying (Advanced)
+By default, Spring uses simple dynamic proxies or CGLIB proxies. For more complex scenarios, you can configure Spring to use AspectJ for compile-time weaving, which modifies the actual bytecode of your classes to insert transactional logic directly, rather than relying on a proxy object [1]. 
 
+3. Enabling Debug/Trace Logging
+You can configure your logging framework (like Logback or SLF4J) to display the debug information from Spring's transaction manager. 
+Add logging dependencies if needed.
+Set the log level for packages like org.springframework.transaction and org.springframework.aop to DEBUG or TRACE in your configuration file (e.g., application.properties or logback.xml):
+properties
+logging.level.org.springframework.transaction=DEBUG
+logging.level.org.springframework.aop=DEBUG
+When you run your application, the logs will show messages like "Initiating transaction...", "Committing transaction...", and "Rollback of transaction..." logged by the proxy's logic [3]. 
 
-keywords
-Spring Boot, Hibernate, MVC Architecture, Java, MySQL, Maven, DAO Pattern, Service Layer, JSP, E-Commerce Application, Web Development
+4. Programmatic Inspection
+You can programmatically check if a bean is a proxy and even get a reference to the underlying target object using Spring utilities: 
+java
+import org.springframework.aop.support.AopUtils;
+import org.springframework.aop.framework.Advised;
 
+// ... inside a component or service
+
+    public void checkProxy(Object serviceBean) {
+        if (AopUtils.isAopProxy(serviceBean)) {
+            System.out.println("Bean is a proxy. Type: " + serviceBean.getClass().getName());
+            if (AopUtils.isJdkDynamicProxy(serviceBean)) {
+                System.out.println("It's a JDK dynamic proxy.");
+            } else if (AopUtils.isCglibProxy(serviceBean)) {
+                System.out.println("It's a CGLIB proxy.");
+            }
+
+            // You can also access the target object
+            try {
+                Object target = ((Advised) serviceBean).getTargetSource().getTarget();
+                System.out.println("Target class: " + target.getClass().getName());
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        } else {
+            System.out.println("Bean is not a proxy.");
+        }
+    }
 
 
 
